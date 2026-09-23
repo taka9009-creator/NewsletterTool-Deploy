@@ -1,0 +1,1237 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>親近感を生むニュースレター作成ツール (基本4パーツ版)</title>
+    <style>
+:root {
+  --bg-color: #f3f4f6;
+  --editor-bg: #ffffff;
+  --border-color: #e5e7eb;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --paper-bg: #ffffff;
+  
+  --font-standard: 'Zen Maru Gothic', sans-serif;
+  --font-handwriting: 'Yusei Magic', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-standard);
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 編集用パネル */
+.editor-pane {
+  width: 450px;
+  background-color: var(--editor-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 24px;
+  overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.editor-pane h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.page-switcher {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.form-section h2 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: var(--primary);
+}
+.section-desc {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.flex-1 {
+  flex: 1;
+}
+.font-select {
+  width: 140px;
+}
+.size-select {
+  width: 70px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.form-group input[type="text"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.content-block {
+  background: #f9fafb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  position: relative;
+  border: 1px solid #e5e7eb;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+.btn-primary { background-color: var(--primary); color: white; }
+.btn-primary:hover { background-color: var(--primary-hover); }
+.btn-secondary { background-color: white; border: 1px solid var(--border-color); color: var(--text-main); }
+.btn-secondary:hover { background-color: #f3f4f6; }
+
+.btn-remove-block {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #fee2e2;
+  color: #dc2626;
+  margin-top: 8px;
+}
+
+/* プレビューパネル */
+.preview-pane {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px;
+  overflow-y: auto;
+  background-color: #4b5563; 
+}
+
+/* A4用紙のスタイル */
+.a4-paper {
+  background-color: var(--paper-bg);
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  padding-bottom: 40mm; /* フッター用のスペースを確保 */
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  color: #000;
+  position: relative;
+}
+
+.paper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #000;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.header-left { flex: 1; }
+#preview-title {
+  font-size: 45pt;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 2px;
+}
+.header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 14px;
+}
+#preview-date { font-weight: bold; }
+#preview-philosophy { font-style: italic; color: #333; }
+.header-right { margin-left: 20px; }
+#preview-photo {
+  width: 40mm;
+  height: 40mm;
+  object-fit: cover;
+  border: 1px solid #000;
+  border-radius: 4px;
+}
+
+.paper-body {
+  flex: 1;
+}
+
+/* プレビュースタイル（見出し・本文） */
+.preview-article {
+  margin-bottom: 30px;
+}
+.preview-article-heading {
+  font-family: var(--font-handwriting);
+  font-size: 22px; /* JSで上書きされる */
+  margin-bottom: 15px;
+  background-color: #f0f0f0;
+  padding: 8px 12px;
+  border-left: 5px solid #666;
+  border-radius: 2px;
+}
+.preview-article-image {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 0;
+  border-radius: 4px;
+}
+.preview-article-body {
+  font-size: 15px; /* JSで上書きされる */
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.paper-footer {
+  position: absolute;
+  bottom: 20mm;
+  left: 20mm;
+  right: 20mm;
+  margin-top: 0;
+}
+.footer-line {
+  height: 1px;
+  background-color: #000;
+  margin-bottom: 15px;
+}
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.footer-info {
+  text-align: left;
+  font-size: 10pt;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.footer-qr img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+}
+
+/* 印刷用スタイル */
+@media print {
+  @page { size: A4; margin: 0; }
+  body, .app-container { height: auto; overflow: visible; background-color: white; }
+  .noprint, .editor-pane { display: none !important; }
+  .preview-pane { padding: 0; background-color: transparent; display: block; }
+  .a4-paper {
+      width: 100%;
+      min-height: 100vh;
+      padding: 20mm;
+      margin: 0;
+      box-shadow: none;
+      display: flex !important; /* 印刷時は常に表示 */
+      page-break-after: always;
+  }
+}
+
+/* スマホ用レスポンシブスタイル */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .editor-pane {
+    width: 100%;
+    height: 50vh;
+    border-right: none;
+    border-bottom: 2px solid var(--border-color);
+    padding: 16px;
+  }
+
+  .preview-pane {
+    width: 100%;
+    height: 50vh;
+    padding: 10px;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  /* A4用紙をスマホ画面に合わせて最適に自動縮小表示 */
+  .a4-paper {
+    transform-origin: top center;
+    /* 画面幅に合わせて自動スケール (A4幅+余白で約820px) */
+    zoom: calc(100vw / 820);
+    margin: 0 auto;
+    margin-bottom: 40px;
+  }
+  
+  /* Firefox用のフォールバック */
+  @supports (-moz-appearance:none) {
+    .a4-paper {
+      transform-origin: top left;
+      transform: scale(calc(100vw / 820));
+      margin-bottom: calc(-1122px * (1 - (100vw / 820)) + 40px);
+    }
+  }
+
+  /* フォーム要素の縦積み */
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .font-select, .size-select {
+    width: 100% !important;
+  }
+
+  .header-meta {
+    font-size: 12px;
+  }
+  #preview-title {
+    font-size: 32pt;
+  }
+}
+
+
+/* 追加CSS */
+#preview-philosophy {
+  white-space: pre-wrap;
+}
+.preview-article {
+  border: 2px solid #555;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.8);
+}
+#btn-mobile-preview-float {
+  display: none;
+}
+#btn-close-preview {
+  display: none;
+}
+@media (max-width: 768px) {
+  .editor-pane {
+    height: 100vh !important;
+    padding-bottom: 100px !important;
+  }
+  .preview-pane {
+    display: none !important;
+  }
+  .preview-pane.mobile-active {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center; /* 中央寄せ */
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 9999;
+    background: #555 !important;
+    overflow: auto !important; /* 上下左右スクロール可能に */
+    padding: 10px;
+    padding-bottom: 100px; /* 閉じるボタン用の余白 */
+    box-sizing: border-box;
+  }
+  #btn-mobile-preview-float {
+    display: block;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9000;
+    padding: 15px 30px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  #btn-close-preview {
+    display: block;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    padding: 15px 40px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+}
+</style>
+    <link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="icon" type="image/jpeg" href="app_icon.jpg">
+    <link rel="apple-touch-icon" href="app_icon.jpg">
+    <meta property="og:image" content="app_icon.jpg">
+</head>
+<body>
+    <button type="button" id="btn-mobile-preview-float" class="noprint">プレビューを見る</button>
+    <div class="app-container">
+        <!-- 編集用パネル -->
+        <aside class="editor-pane noprint">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <img src="app_icon.jpg" alt="App Icon" style="width: 44px; height: 44px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); object-fit: cover;">
+                <h1 style="margin-bottom: 0;">ニュースレター作成ツール</h1>
+            </div>
+            <p class="subtitle">〜6割の完成度で親近感を〜</p>
+            
+            <button type="button" class="btn btn-primary" id="btn-save-manual" style="width: 100%; margin-bottom: 20px; font-size: 1.2rem; padding: 12px; background-color: #28a745; border-color: #28a745; font-weight: bold; color: white;">保存する</button>
+
+            
+            <!-- 5分作成クイックガイドバー -->
+            <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 0.85rem; color: #3730a3;">
+                <div style="font-weight: bold; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>⚡ 5分で作成！かんたんステップ</span>
+                    <button type="button" id="btn-quick-sample" style="font-size: 0.75rem; padding: 2px 8px; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">例文をセット</button>
+                </div>
+                <ol style="margin-left: 18px; line-height: 1.4; color: #4338ca;">
+                    <li>今月号の「タイトル」「日付」を確認</li>
+                    <li>記事の「見出し」と「本文」を打ち込む</li>
+                    <li>上の緑色の「保存する」ボタンを押して印刷！</li>
+                </ol>
+            </div>
+
+            <div class="page-switcher">
+                <button type="button" class="btn btn-primary" id="tab-page-1">表面 (Page 1)</button>
+                <button type="button" class="btn btn-secondary" id="tab-page-2">裏面 (Page 2)</button>
+            </div>
+
+            <form id="newsletter-form">
+                <!-- 表面（Page 1）用フォーム -->
+                <div id="form-page-1">
+                    <section class="form-section">
+                        <h2>1. ヘッダー（玄関先でのご挨拶）</h2>
+                        <div class="form-group form-row">
+                            <div class="flex-1">
+                                <label for="title">タイトル</label>
+                                <input type="text" id="title" placeholder="例：〇〇通信" value="さくら通信">
+                            </div>
+                            <div class="size-select" style="margin-right: 10px;">
+                                <label for="title-size">サイズ</label>
+                                <select id="title-size">
+                                    <option value="36pt">小 (36pt)</option>
+                                    <option value="45pt" selected>中 (45pt)</option>
+                                    <option value="55pt">大 (55pt)</option>
+                                    <option value="70pt">特大 (70pt)</option>
+                                </select>
+                            </div>
+                            <div class="font-select">
+                                <label for="title-font">フォント</label>
+                                <select id="title-font">
+                                    <option value="'Zen Maru Gothic', sans-serif">標準（丸ゴシック）</option>
+                                    <option value="'Yu Gothic', 'YuGothic', sans-serif">游ゴシック</option>
+                                    <option value="'みかちゃん', 'Mikachan', 'Yusei Magic', sans-serif">みかちゃん（手書き系）</option>
+                                    <option value="'衡山毛筆フォント', 'KouzanMouhitsuFont', serif">衡山毛筆フォント</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="date">発行日・号数</label>
+                            <input type="text" id="date" placeholder="例：2023年10月号 Vol.15" value="2023年10月号 Vol.15">
+                        </div>
+                        <div class="form-group">
+                            <label for="philosophy">自己紹介（三行で）</label>
+                            <textarea id="philosophy" rows="3" placeholder="自己紹介三行で" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; font-family:inherit; resize:vertical;">自己紹介三行で</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="photo">あなたの写真（顔写真など）</label>
+                            <input type="file" id="photo" accept="image/*">
+                        </div>
+                    </section>
+
+                    <section class="form-section">
+                        <h2>2. 見出しと本文（表面）</h2>
+                        <div id="content-blocks-1">
+                            <!-- JSで生成 -->
+                        </div>
+                        <button type="button" id="add-block-btn-1" class="btn btn-secondary">＋ 記事を追加する</button>
+                    </section>
+                </div>
+
+                <!-- 裏面（Page 2）用フォーム -->
+                <div id="form-page-2" style="display: none;">
+                    <section class="form-section">
+                        <h2>2. 見出しと本文（裏面）</h2>
+                        <p class="section-desc">裏面はヘッダーなしで記事から始まります。</p>
+                        <div id="content-blocks-2">
+                            <!-- JSで生成 -->
+                        </div>
+                        <button type="button" id="add-block-btn-2" class="btn btn-secondary">＋ 記事を追加する</button>
+                    </section>
+                </div>
+
+                <!-- 共通フッター設定 -->
+                <section class="form-section">
+                    <h2>3. フッター（最後のお見送り）</h2>
+                    <p class="section-desc">※ページ下部に固定表示されます。</p>
+                    <div class="form-group">
+                        <label for="company">会社名・屋号</label>
+                        <input type="text" id="company" value="株式会社カワニシバークメド">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">住所</label>
+                        <input type="text" id="address" value="〒060-0001 北海道札幌市中央区北１条西８丁目２−３９ Ism札幌大通 7階">
+                    </div>
+                    <div class="form-group">
+                        <label for="contact">電話番号</label>
+                        <input type="text" id="contact" value="TEL: 090-2989-4925">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">メールアドレス</label>
+                        <input type="text" id="email" value="takamatsuura@kawanishi-md.co.jp">
+                    </div>
+                    <div class="form-group">
+                        <label for="url">WEBサイト URL（QRコード自動生成）</label>
+                        <input type="text" id="url" value="https://kawanishi-bm.co.jp/">
+                    </div>
+                </section>
+
+                <div class="action-buttons">
+                    <button type="button" id="print-btn" class="btn btn-primary">PDFとして保存 / 印刷</button>
+                </div>
+            </form>
+        </aside>
+
+        <!-- プレビューパネル -->
+        <main class="preview-pane">
+            <button type="button" id="btn-close-preview" class="noprint">編集に戻る</button>
+            <div id="preview-page-1" class="a4-paper">
+                <header class="paper-header">
+                    <div class="header-left">
+                        <h1 id="preview-title">さくら通信</h1>
+                        <div class="header-meta">
+                            <span id="preview-date">2023年10月号 Vol.15</span>
+                            <span id="preview-philosophy">あなたの生活に笑顔を届けます</span>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <img id="preview-photo" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22150%22%20height%3D%22150%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22150%22%20height%3D%22150%22%20fill%3D%22%23eee%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22%23999%22%3E%E5%86%99%E7%9C%9F%3C%2Ftext%3E%3C%2Fsvg%3E" alt="顔写真">
+                    </div>
+                </header>
+                <div class="paper-body" id="preview-content-1"></div>
+                <footer class="paper-footer" id="preview-footer-1">
+                    <div class="footer-line"></div>
+                    <div class="footer-content">
+                        <div class="footer-info">
+                            <strong class="preview-company">株式会社カワニシバークメド</strong>
+                            <span class="preview-address">〒060-0001 北海道札幌市中央区北１条西８丁目２−３９ Ism札幌大通 7階</span>
+                            <span class="preview-contact">TEL: 090-2989-4925</span>
+                            <span class="preview-email">takamatsuura@kawanishi-md.co.jp</span>
+                        </div>
+                        <div class="footer-qr">
+                            <img class="preview-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://kawanishi-bm.co.jp/" alt="QR Code">
+                        </div>
+                    </div>
+                </footer>
+            </div>
+
+            <div id="preview-page-2" class="a4-paper" style="display: none;">
+                <div class="paper-body" id="preview-content-2"></div>
+                <footer class="paper-footer" id="preview-footer-2">
+                    <div class="footer-line"></div>
+                    <div class="footer-content">
+                        <div class="footer-info">
+                            <strong class="preview-company">株式会社カワニシバークメド</strong>
+                            <span class="preview-address">〒060-0001 北海道札幌市中央区北１条西８丁目２−３９ Ism札幌大通 7階</span>
+                            <span class="preview-contact">TEL: 090-2989-4925</span>
+                            <span class="preview-email">takamatsuura@kawanishi-md.co.jp</span>
+                        </div>
+                        <div class="footer-qr">
+                            <img class="preview-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://kawanishi-bm.co.jp/" alt="QR Code">
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </main>
+    </div>
+
+    <!-- 記事ブロックのテンプレート -->
+    <template id="block-template">
+        <div class="content-block">
+            <div class="form-group form-row">
+                <div class="flex-1">
+                    <label>見出し</label>
+                    <input type="text" class="heading-input" placeholder="見出しを入力...">
+                </div>
+                <div class="font-select">
+                    <label>フォント</label>
+                    <select class="heading-font-input">
+                        <option value="'みかちゃん', 'Mikachan', 'Yusei Magic', sans-serif">みかちゃん（手書き系）</option>
+                        <option value="'Yu Gothic', 'YuGothic', sans-serif">游ゴシック</option>
+                        <option value="'Meiryo', sans-serif">メイリオ</option>
+                        <option value="'手書き雑フォント', 'TegakiZatsu', sans-serif">手書き雑フォント</option>
+                        <option value="'衡山毛筆フォント', 'KouzanMouhitsuFont', serif">衡山毛筆フォント</option>
+                    </select>
+                </div>
+                <div class="size-select">
+                    <label>サイズ</label>
+                    <select class="heading-size-input">
+                        <option value="18px">小</option>
+                        <option value="22px" selected>中</option>
+                        <option value="28px">大</option>
+                        <option value="36px">特大</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group form-row">
+                <div class="flex-1">
+                    <label>画像（任意）</label>
+                    <input type="file" class="image-input" accept="image/*" style="font-size: 0.8rem; padding: 4px;">
+                </div>
+                <div class="size-select">
+                    <label>画像サイズ</label>
+                    <select class="image-size-input">
+                        <option value="30%">小</option>
+                        <option value="50%">中</option>
+                        <option value="80%">大</option>
+                        <option value="100%" selected>特大（幅いっぱい）</option>
+                    </select>
+                </div>
+                <div class="size-select" style="width: 140px;">
+                    <label>レイアウト（画像と本文）</label>
+                    <select class="layout-pattern-input">
+                        <option value="text-bottom" selected>画像が上・本文が下</option>
+                        <option value="text-top">本文が上・画像が下</option>
+                        <option value="text-right">画像が左・本文が右</option>
+                        <option value="text-left">本文が左・画像が右</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="button" class="btn-clear-image btn-secondary" style="margin-top: 22px; padding: 4px 8px; font-size: 0.8rem;">クリア</button>
+                </div>
+            </div>
+
+            <div class="form-group form-row">
+                <div class="flex-1">
+                    <label>本文</label>
+                    <textarea class="body-input" rows="4" placeholder="本文を入力..."></textarea>
+                </div>
+                <div class="font-select">
+                    <label>フォント</label>
+                    <select class="body-font-input">
+                        <option value="'Yu Gothic', 'YuGothic', sans-serif" selected>游ゴシック</option>
+                        <option value="'Meiryo', sans-serif">メイリオ</option>
+                        <option value="'みかちゃん', 'Mikachan', 'Yusei Magic', sans-serif">みかちゃん（手書き系）</option>
+                        <option value="'手書き雑フォント', 'TegakiZatsu', sans-serif">手書き雑フォント</option>
+                        <option value="'衡山毛筆フォント', 'KouzanMouhitsuFont', serif">衡山毛筆フォント</option>
+                    </select>
+                </div>
+                <div class="size-select">
+                    <label>サイズ</label>
+                    <select class="body-size-input">
+                        <option value="13px">小</option>
+                        <option value="15px" selected>中</option>
+                        <option value="18px">大</option>
+                    </select>
+                </div>
+            </div>
+            <button type="button" class="btn-remove-block btn-danger">この記事を削除</button>
+        </div>
+    </template>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIza" + "SyAINC3EhNSq6EibtjeQYtmCDzVaW8HnYn8",
+            authDomain: "kpi-dashboard-df893.firebaseapp.com",
+            projectId: "kpi-dashboard-df893",
+            storageBucket: "kpi-dashboard-df893.firebasestorage.app",
+            messagingSenderId: "20970718015",
+            appId: "1:20970718015:web:540ee3f6953d7bcedb098a",
+            databaseURL: "https://kpi-dashboard-df893-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Elements ---
+    const tabPage1 = document.getElementById('tab-page-1');
+    const tabPage2 = document.getElementById('tab-page-2');
+    const formPage1 = document.getElementById('form-page-1');
+    const formPage2 = document.getElementById('form-page-2');
+    const previewPage1 = document.getElementById('preview-page-1');
+    const previewPage2 = document.getElementById('preview-page-2');
+
+
+    const btnMobilePreview = document.getElementById('btn-mobile-preview-float');
+    const btnClosePreview = document.getElementById('btn-close-preview');
+    const previewPane = document.querySelector('.preview-pane');
+
+    if(btnMobilePreview && btnClosePreview) {
+        btnMobilePreview.addEventListener('click', () => {
+            previewPane.classList.add('mobile-active');
+        });
+        btnClosePreview.addEventListener('click', () => {
+            previewPane.classList.remove('mobile-active');
+        });
+    }
+
+    
+    // 例文ワンクリックセット機能
+    const btnQuickSample = document.getElementById('btn-quick-sample');
+    if (btnQuickSample) {
+        btnQuickSample.addEventListener('click', () => {
+            if (confirm('今月号の例文セットを入力しますか？（現在の入力内容が更新されます）')) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth() + 1;
+                
+                titleInput.value = "さくら通信";
+                dateInput.value = `${year}年${month}月号 Vol.${month}`;
+                philosophyInput.value = "地域の皆様に笑顔と安心をお届けします！\n今月も元気に営業中♪\nお気軽にご相談ください。";
+                
+                titleInput.dispatchEvent(new Event('input'));
+                dateInput.dispatchEvent(new Event('input'));
+                philosophyInput.dispatchEvent(new Event('input'));
+                
+                // 1つ目の記事ブロックに例文を注入
+                const firstBlock = document.querySelector('#content-blocks-1 .content-block');
+                if (firstBlock) {
+                    const headingInput = firstBlock.querySelector('.heading-input');
+                    const bodyInput = firstBlock.querySelector('.body-input');
+                    if (headingInput) headingInput.value = "今月のひとこと日記";
+                    if (bodyInput) bodyInput.value = "いつもご愛顧いただきありがとうございます！最近はすっかり秋めいて過ごしやすくなってきましたね。今月も皆様にとって素晴らしい1月になりますように。";
+                    headingInput.dispatchEvent(new Event('input'));
+                    bodyInput.dispatchEvent(new Event('input'));
+                }
+                
+                alert('例文をセットしました！必要に応じて書き換えて「保存する」を押してください。');
+            }
+        });
+    }
+
+    // Header elements
+    const titleInput = document.getElementById('title');
+    const titleFontInput = document.getElementById('title-font');
+    const titleSizeInput = document.getElementById('title-size');
+    const dateInput = document.getElementById('date');
+    const philosophyInput = document.getElementById('philosophy');
+    const photoInput = document.getElementById('photo');
+    
+    const previewTitle = document.getElementById('preview-title');
+    const previewDate = document.getElementById('preview-date');
+    const previewPhilosophy = document.getElementById('preview-philosophy');
+    const previewPhoto = document.getElementById('preview-photo');
+
+    // Footer elements
+    const companyInput = document.getElementById('company');
+    const addressInput = document.getElementById('address');
+    const contactInput = document.getElementById('contact');
+    const emailInput = document.getElementById('email');
+    const urlInput = document.getElementById('url');
+
+    // Content Blocks
+    const contentBlocks1 = document.getElementById('content-blocks-1');
+    const contentBlocks2 = document.getElementById('content-blocks-2');
+    const btnAddBlock1 = document.getElementById('add-block-btn-1');
+    const btnAddBlock2 = document.getElementById('add-block-btn-2');
+    const previewContent1 = document.getElementById('preview-content-1');
+    const previewContent2 = document.getElementById('preview-content-2');
+    
+    const blockTemplate = document.getElementById('block-template');
+    const btnPrint = document.getElementById('print-btn');
+
+    // --- State ---
+    let currentPage = 1;
+
+    // --- Logic ---
+    function switchPage(page) {
+        currentPage = page;
+        
+        tabPage1.className = page === 1 ? 'btn btn-primary' : 'btn btn-secondary';
+        tabPage2.className = page === 2 ? 'btn btn-primary' : 'btn btn-secondary';
+        
+        formPage1.style.display = page === 1 ? 'block' : 'none';
+        formPage2.style.display = page === 2 ? 'block' : 'none';
+        
+        previewPage1.style.display = page === 1 ? 'flex' : 'none';
+        previewPage2.style.display = page === 2 ? 'flex' : 'none';
+    }
+
+    tabPage1.addEventListener('click', () => switchPage(1));
+    tabPage2.addEventListener('click', () => switchPage(2));
+
+    // --- Storage ---
+    function saveSettings() {
+        if(isLoadingFromRemote) return; // リモートからのロード中は保存しない
+        
+        const data = {
+            title: titleInput.value,
+            titleFont: titleFontInput.value,
+            titleSize: titleSizeInput.value,
+            date: dateInput.value,
+            philosophy: philosophyInput.value,
+            company: companyInput.value,
+            address: addressInput.value,
+            contact: contactInput.value,
+            email: emailInput.value,
+            url: urlInput.value,
+            photoUrl: previewPhoto.src,
+            blocks: {
+                page1: Array.from(document.querySelectorAll('#content-blocks-1 .content-block')).map(b => ({
+                    heading: b.querySelector('.heading-input').value,
+                    headingFont: b.querySelector('.heading-font-input').value,
+                    headingSize: b.querySelector('.heading-size-input').value,
+                    body: b.querySelector('.body-input').value,
+                    bodyFont: b.querySelector('.body-font-input').value,
+                    bodySize: b.querySelector('.body-size-input').value,
+                    imageUrl: b.dataset.imageUrl || '',
+                    imageX: b.dataset.imageX || '0',
+                    imageY: b.dataset.imageY || '0',
+                    imageSize: b.querySelector('.image-size-input') ? b.querySelector('.image-size-input').value : '100%',
+                    layoutPattern: b.querySelector('.layout-pattern-input') ? b.querySelector('.layout-pattern-input').value : 'text-bottom'
+                })),
+                page2: Array.from(document.querySelectorAll('#content-blocks-2 .content-block')).map(b => ({
+                    heading: b.querySelector('.heading-input').value,
+                    headingFont: b.querySelector('.heading-font-input').value,
+                    headingSize: b.querySelector('.heading-size-input').value,
+                    body: b.querySelector('.body-input').value,
+                    bodyFont: b.querySelector('.body-font-input').value,
+                    bodySize: b.querySelector('.body-size-input').value,
+                    imageUrl: b.dataset.imageUrl || '',
+                    imageSize: b.querySelector('.image-size-input') ? b.querySelector('.image-size-input').value : '100%',
+                    layoutPattern: b.querySelector('.layout-pattern-input') ? b.querySelector('.layout-pattern-input').value : 'text-bottom'
+                }))
+            }
+        };
+        try {
+            db.ref('newsletter').set(data).catch(e => {
+                console.warn("Firebase保存エラー:", e);
+                // フォールバックとしてlocalStorageにも保存
+                localStorage.setItem('newsletter_saved_data', JSON.stringify(data));
+            });
+        } catch (e) {
+            console.warn("画像のサイズが大きすぎるため、保存できませんでした。", e);
+        }
+    }
+
+    // Manual Save Button Logic
+    const btnSaveManual = document.getElementById('btn-save-manual');
+    if (btnSaveManual) {
+        btnSaveManual.addEventListener('click', () => {
+            saveSettings();
+            
+            // Visual feedback
+            const originalText = btnSaveManual.textContent;
+            btnSaveManual.textContent = "保存しました！";
+            btnSaveManual.style.backgroundColor = "#218838";
+            
+            setTimeout(() => {
+                btnSaveManual.textContent = originalText;
+                btnSaveManual.style.backgroundColor = "#28a745";
+            }, 2000);
+        });
+    }
+
+    let isLoadingFromRemote = false;
+
+    function loadSettings() {
+        db.ref('newsletter').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            
+            const active = document.activeElement;
+            if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+                return;
+            }
+            
+            isLoadingFromRemote = true; // 保存を無効化
+            
+            try {
+                if(data.title) titleInput.value = data.title;
+                if(data.titleFont) titleFontInput.value = data.titleFont;
+                if(data.titleSize) {
+                    titleSizeInput.value = data.titleSize;
+                    previewTitle.style.fontSize = data.titleSize;
+                }
+                if(data.date) dateInput.value = data.date;
+                if(data.philosophy) philosophyInput.value = data.philosophy;
+                if(data.company) companyInput.value = data.company;
+                if(data.address) addressInput.value = data.address;
+                if(data.contact) contactInput.value = data.contact;
+                if(data.email) emailInput.value = data.email;
+                if(data.url) urlInput.value = data.url;
+                if(data.photoUrl && data.photoUrl.startsWith('data:image')) {
+                    previewPhoto.src = data.photoUrl;
+                }
+                
+                // 記事ブロックの復元
+                if(data.blocks) {
+                    contentBlocks1.innerHTML = '';
+                    contentBlocks2.innerHTML = '';
+                    if(data.blocks.page1 && data.blocks.page1.length > 0) {
+                        data.blocks.page1.forEach(b => addBlock(1, b));
+                    } else {
+                        addBlock(1);
+                    }
+                    if(data.blocks.page2) {
+                        data.blocks.page2.forEach(b => addBlock(2, b));
+                    }
+                } else {
+                    addBlock(1);
+                }
+            } catch (e) {
+                console.error("Firebaseデータの読み込みに失敗しました", e);
+            }
+        
+            // トリガーしてプレビューに反映
+            titleInput.dispatchEvent(new Event('input'));
+            titleFontInput.dispatchEvent(new Event('change'));
+            dateInput.dispatchEvent(new Event('input'));
+            philosophyInput.dispatchEvent(new Event('input'));
+            companyInput.dispatchEvent(new Event('input'));
+            addressInput.dispatchEvent(new Event('input'));
+            contactInput.dispatchEvent(new Event('input'));
+            emailInput.dispatchEvent(new Event('input'));
+            urlInput.dispatchEvent(new Event('input'));
+            
+            setTimeout(() => {
+                isLoadingFromRemote = false; // 再び保存を有効化
+            }, 500);
+        });
+    }
+
+    // Bind simple text inputs
+    const bindInput = (input, previewEl) => {
+        input.addEventListener('input', () => {
+            previewEl.textContent = input.value;
+        });
+    };
+    bindInput(titleInput, previewTitle);
+    bindInput(dateInput, previewDate);
+    bindInput(philosophyInput, previewPhilosophy);
+
+    // Bind font for title
+    titleFontInput.addEventListener('change', () => {
+        previewTitle.style.fontFamily = titleFontInput.value;
+    });
+
+    titleSizeInput.addEventListener('change', () => {
+        previewTitle.style.fontSize = titleSizeInput.value;
+    });
+
+    // Bind multiple footer elements
+    const bindFooterInput = (input, className) => {
+        input.addEventListener('input', () => {
+            document.querySelectorAll(className).forEach(el => {
+                el.textContent = input.value;
+            });
+        });
+    };
+    bindFooterInput(companyInput, '.preview-company');
+    bindFooterInput(addressInput, '.preview-address');
+    bindFooterInput(contactInput, '.preview-contact');
+    bindFooterInput(emailInput, '.preview-email');
+
+    // Generate QR code for URL
+    urlInput.addEventListener('input', () => {
+        const url = urlInput.value || 'https://example.com';
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(url)}`;
+        document.querySelectorAll('.preview-qr').forEach(img => {
+            img.src = qrUrl;
+        });
+    });
+
+    // Photo Upload
+    photoInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                previewPhoto.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Content Block Logic
+    function renderArticles(page) {
+        const blocksContainer = page === 1 ? contentBlocks1 : contentBlocks2;
+        const previewContainer = page === 1 ? previewContent1 : previewContent2;
+        
+        previewContainer.innerHTML = ''; // clear
+
+        const blocks = blocksContainer.querySelectorAll('.content-block');
+        blocks.forEach(block => {
+            const heading = block.querySelector('.heading-input').value;
+            const headingSize = block.querySelector('.heading-size-input').value;
+            const headingFont = block.querySelector('.heading-font-input').value;
+            const body = block.querySelector('.body-input').value;
+            const bodySize = block.querySelector('.body-size-input').value;
+            const bodyFont = block.querySelector('.body-font-input').value;
+            const imageUrl = block.dataset.imageUrl;
+            const imageSize = block.querySelector('.image-size-input') ? block.querySelector('.image-size-input').value : '100%';
+            const layoutPattern = block.querySelector('.layout-pattern-input') ? block.querySelector('.layout-pattern-input').value : 'text-bottom';
+
+            if (heading || body || imageUrl) {
+                const articleEl = document.createElement('div');
+                articleEl.className = 'preview-article';
+                articleEl.style.position = 'relative';
+
+                if (heading) {
+                    const h3 = document.createElement('h3');
+                    h3.className = 'preview-article-heading';
+                    h3.textContent = heading;
+                    h3.style.fontSize = headingSize;
+                    h3.style.fontFamily = headingFont;
+                    articleEl.appendChild(h3);
+                }
+
+                if (imageUrl || body) {
+                    const contentContainer = document.createElement('div');
+                    contentContainer.style.display = 'flex';
+                    contentContainer.style.gap = '15px';
+                    
+                    let imgEl, pEl;
+
+                    if (imageUrl) {
+                        imgEl = document.createElement('img');
+                        imgEl.src = imageUrl;
+                        imgEl.className = 'preview-article-image';
+                        imgEl.style.objectFit = 'contain';
+                        imgEl.style.width = imageSize === '100%' ? '50%' : imageSize;
+                        
+                        // 自由配置用のスタイル
+                        imgEl.style.position = 'absolute';
+                        imgEl.style.left = block.dataset.imageX ? block.dataset.imageX + 'px' : '0px';
+                        imgEl.style.top = block.dataset.imageY ? block.dataset.imageY + 'px' : '0px';
+                        imgEl.style.cursor = 'move';
+                        imgEl.style.zIndex = '100';
+                        imgEl.style.touchAction = 'none';
+
+                        let isDragging = false;
+                        let startX, startY, initialLeft, initialTop;
+
+                        const startDrag = (e) => {
+                            isDragging = true;
+                            if(e.cancelable) e.preventDefault();
+                            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                            startX = clientX;
+                            startY = clientY;
+                            initialLeft = parseFloat(imgEl.style.left) || 0;
+                            initialTop = parseFloat(imgEl.style.top) || 0;
+                            imgEl.style.opacity = '0.7';
+                            imgEl.style.zIndex = '200';
+                        };
+
+                        const onDrag = (e) => {
+                            if (!isDragging) return;
+                            if(e.cancelable) e.preventDefault();
+                            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                            const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                            
+                            const dx = clientX - startX;
+                            const dy = clientY - startY;
+                            
+                            imgEl.style.left = (initialLeft + dx) + 'px';
+                            imgEl.style.top = (initialTop + dy) + 'px';
+                        };
+
+                        const stopDrag = (e) => {
+                            if (!isDragging) return;
+                            isDragging = false;
+                            imgEl.style.opacity = '1';
+                            imgEl.style.zIndex = '100';
+                            block.dataset.imageX = parseFloat(imgEl.style.left) || 0;
+                            block.dataset.imageY = parseFloat(imgEl.style.top) || 0;
+                        };
+
+                        imgEl.addEventListener('mousedown', startDrag);
+                        imgEl.addEventListener('touchstart', startDrag, {passive: false});
+                        window.addEventListener('mousemove', onDrag);
+                        window.addEventListener('touchmove', onDrag, {passive: false});
+                        window.addEventListener('mouseup', stopDrag);
+                        window.addEventListener('touchend', stopDrag);
+                        
+                        articleEl.appendChild(imgEl);
+                    }
+
+                    if (body) {
+                        pEl = document.createElement('div');
+                        pEl.className = 'preview-article-body';
+                        pEl.textContent = body;
+                        pEl.style.fontSize = bodySize;
+                        pEl.style.fontFamily = bodyFont;
+                        pEl.style.flex = '1';
+                    }
+
+                    if (layoutPattern === 'text-bottom') {
+                        contentContainer.style.flexDirection = 'column';
+                        if (pEl) contentContainer.appendChild(pEl);
+                    } else if (layoutPattern === 'text-top') {
+                        contentContainer.style.flexDirection = 'column';
+                        if (pEl) contentContainer.appendChild(pEl);
+                    } else if (layoutPattern === 'text-right') {
+                        contentContainer.style.flexDirection = 'row';
+                        if (pEl) contentContainer.appendChild(pEl);
+                    } else if (layoutPattern === 'text-left') {
+                        contentContainer.style.flexDirection = 'row';
+                        if (pEl) contentContainer.appendChild(pEl);
+                    }
+                    articleEl.appendChild(contentContainer);
+                }
+
+                previewContainer.appendChild(articleEl);
+            }
+        });
+    }
+
+    function addBlock(page, bData = null) {
+        const container = page === 1 ? contentBlocks1 : contentBlocks2;
+        const clone = blockTemplate.content.cloneNode(true);
+        const block = clone.querySelector('.content-block');
+        
+        if (bData) {
+            if(bData.heading !== undefined) block.querySelector('.heading-input').value = bData.heading;
+            if(bData.headingFont) block.querySelector('.heading-font-input').value = bData.headingFont;
+            if(bData.headingSize) block.querySelector('.heading-size-input').value = bData.headingSize;
+            if(bData.body !== undefined) block.querySelector('.body-input').value = bData.body;
+            if(bData.bodyFont) block.querySelector('.body-font-input').value = bData.bodyFont;
+            if(bData.bodySize) block.querySelector('.body-size-input').value = bData.bodySize;
+            if(bData.imageUrl) block.dataset.imageUrl = bData.imageUrl;
+            if(bData.imageX) block.dataset.imageX = bData.imageX;
+            if(bData.imageY) block.dataset.imageY = bData.imageY;
+            if(bData.imageSize) { const el = block.querySelector('.image-size-input'); if(el) el.value = bData.imageSize; }
+            if(bData.layoutPattern) { const el = block.querySelector('.layout-pattern-input'); if(el) el.value = bData.layoutPattern; }
+        }
+        
+        // Add events
+        block.querySelectorAll('input[type="text"], textarea, select').forEach(input => {
+            input.addEventListener('input', () => renderArticles(page));
+            input.addEventListener('change', () => renderArticles(page));
+        });
+
+        // Image upload event
+        const imageInput = block.querySelector('.image-input');
+        const btnClearImage = block.querySelector('.btn-clear-image');
+        
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    block.dataset.imageUrl = ev.target.result;
+                    renderArticles(page);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        btnClearImage.addEventListener('click', () => {
+            imageInput.value = '';
+            block.dataset.imageUrl = '';
+            renderArticles(page);
+        });
+
+        block.querySelector('.btn-remove-block').addEventListener('click', () => {
+            block.remove();
+            renderArticles(page);
+        });
+
+        container.appendChild(block);
+        renderArticles(page);
+    }
+
+    btnAddBlock1.addEventListener('click', () => addBlock(1));
+    btnAddBlock2.addEventListener('click', () => addBlock(2));
+
+    // Print
+    btnPrint.addEventListener('click', () => {
+        window.print();
+    });
+
+    // Init
+    loadSettings();
+    addBlock(1);
+});
+
+</script>
+</body>
+</html>
